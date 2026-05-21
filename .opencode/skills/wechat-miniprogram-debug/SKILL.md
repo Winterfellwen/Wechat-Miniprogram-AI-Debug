@@ -38,9 +38,11 @@ metadata:
 **`Stop-Process -Force` 只有在 DevTools 完全无响应时才使用。强制杀进程会损坏登录 token 缓存，导致后续所有操作报"需要重新登录"。**
 
 推荐优先级：
-1. **优雅关闭**（DevTools 仍在运行）：
+1. **优雅关闭**（DevTools 仍在运行）：用 Node.js spawn（完整路径，不用 ShortPath）
    ```powershell
-   cmd.exe /c "<cli.bat>" quit
+   # PowerShell 检测现有进程的路径再 spawn
+   $ps = Get-Process -Name "wechatdevtools" -ErrorAction SilentlyContinue
+   if ($ps) { & "E:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat" quit }
    ```
 2. **CloseMainWindow**（DevTools 无响应但窗口存在）：
    ```powershell
@@ -160,7 +162,7 @@ const wxml = pageEl ? await pageEl.outerWxml() : '(无 page 元素)';
 2. 已知噪音：组件属性类型不匹配、框架日志、组件内部警告、setData 过大/频繁、Loading 频繁、插件日志
 3. 已知可修：`http://`→`https://`、`wx.getUserInfo`、`console.log/info/debug`、`wx.show/hideNavigationBarLoading`、引用错误、资源加载失败、脚本异常、路由异常
 4. 输出 `diagnose-report.txt`（页面状态 + 错误分类 + 噪音列表）和 `diagnose-fix-suggestions.txt`（文件路径+行号+修改建议+原因）
-5. `miniProgram.disconnect()`，然后 `cmd.exe /c "<CLI_PATH>" open --project <项目路径>`
+5. `miniProgram.disconnect()`，然后 `& "<CLI_PATH>" open --project <项目路径>`
 
 # Fix 模式
 1. 扫描同 Scan
@@ -180,7 +182,7 @@ const wxml = pageEl ? await pageEl.outerWxml() : '(无 page 元素)';
 5. 断开 + 保持 DevTools
 
 # 技术约束
-1. `.bat` 必须 `cmd.exe /c` 包装。中文路径用 `ShortPath` 获取短路径。
+1. `.bat` 必须 `cmd.exe /c` 包装。**中文路径不能用 ShortPath**（会导致 CLI 找不到 User Data 登录态），必须用 `spawn('cmd.exe', ['/c', 完整中文路径, ...])` 传完整路径。
 2. 非 tab 页用 `redirectTo`（防栈溢出）
 3. 所有导航加 `Promise.race` + 15s 超时
 4. `page.$()` 无法选 npm 组件标签（如 `t-tabs`），改用 `outerWxml()` + 正则
@@ -202,4 +204,4 @@ const wxml = pageEl ? await pageEl.outerWxml() : '(无 page 元素)';
 - 页面导航失败 → 检查 app.json 路径、wxml 是否存在
 - **PowerShell `$` 符号问题** → `node -e` 中 `page.$('page')` 的 `$` 被 PowerShell 解释为变量。必须用 `.js` 文件运行，不要用 `node -e`。
 - WXML 找不到元素 → npm 组件用 `outerWxml()` 正则
-- **中文路径问题** → 含中文的 cli.bat 路径在 cmd.exe 中会报错 `'E:\Program' 不是内部或外部命令`。必须用短路径（8.3 格式）：`(New-Object -ComObject Scripting.FileSystemObject).GetFile("path").ShortPath`
+- **中文路径问题** → 含中文的 cli.bat 路径在 cmd.exe 中会报错 `'E:\Program' 不是内部或外部命令`。**不要用 ShortPath**（导致 CLI 找不到 User Data → `需要重新登录`）。用 `spawn('cmd.exe', ['/c', fullChinesePath, ...])` 传完整路径（含中文即可，Node.js 数组传参自动处理空格）：`spawn('cmd.exe', ['/c', 'E:\\Program Files (x86)\\Tencent\\微信web开发者工具\\cli.bat', 'auto', ...])`
