@@ -200,9 +200,12 @@ const data = await page.data('someField')
 ### 自定义组件检测（WXML 扫描法）
 ```js
 const pageEl = await page.$('page')
-const wxml = await pageEl.outerWxml()
-const hasComponent = /\bt-tabs\b/.test(wxml) // true if class contains "t-tabs"
+if (pageEl) {
+  const wxml = await pageEl.outerWxml()
+  const hasComponent = /\bt-tabs\b/.test(wxml) // true if tag/class contains "t-tabs"
+}
 ```
+注意：`currentPage()` 返回的 Page 实例**没有** `outerWxml()` 方法。必须通过 `page.$('page')` 获取根元素再调 `outerWxml()`。
 
 ### 错误处理
 ```js

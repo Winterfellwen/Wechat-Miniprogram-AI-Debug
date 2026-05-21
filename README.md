@@ -17,7 +17,7 @@
 <p align="center">
   基于 <code>miniprogram-automator</code> 的微信小程序 AI 诊断 skill。<br>
   AI 直接驱动 DevTools CLI，逐页遍历、分析元素、捕获错误、自动修复。
-  <br><strong>不再需要 diagnose.js 脚本，所有操作由 AI 直接使用 automator API 执行。</strong>
+  <br>短脚本逐步骤控制（非长脚本），AI 看到结果再决定下一步。
 </p>
 
 ---
@@ -84,11 +84,16 @@ cp .opencode/commands/wechat-miniprogram-debug-*.md ~/.config/opencode/commands/
 
 | 文件 | 说明 |
 |------|------|
+| `tests/diagnose.js` | 诊断脚本（根据模板生成，用 `node tests/diagnose.js` 执行）|
 | `diagnose-report.txt` | 诊断报告（页面状态 + 错误分类 + 噪音列表） |
 | `diagnose-fix-suggestions.txt` | **修复方案**（Scan 模式），含文件路径+行号+修改内容 |
 | `diagnose-fix-log.txt` | **修复记录**（Fix 模式），含操作类型+变更内容+原因 |
 
 Fix 模式在执行前会备份项目到 `<项目路径>_backup_<时间戳>/`。
+
+⚠ **重要：不要在 PowerShell 中用 `node -e "..."` 内联脚本。** 用 Write 工具写临时 `.js` 文件再 `node <file>.js` 运行。PowerShell 中 `$` 符号会导致 JS 代码中的 `page.$()` 等语法错误。
+
+每步脚本控制在 15-30 行。AI 看到上一步结果后再决定下一步。避免将所有逻辑写在一个长脚本里（卡住则全部失效）。
 
 ---
 
@@ -100,6 +105,7 @@ Fix 模式在执行前会备份项目到 `<项目路径>_backup_<时间戳>/`。
 | `.opencode/skills/wechat-miniprogram-debug/automator-api.md` | miniprogram-automator API 参考文档（AI 执行时查阅） |
 | `.opencode/commands/wechat-miniprogram-debug-scan.md` | Scan 命令（自动加载 skill） |
 | `.opencode/commands/wechat-miniprogram-debug-fix.md` | Fix 命令（自动加载 skill） |
+| `templates/diagnose.js` | 诊断脚本模板（推荐：写 .js 文件运行而非 node -e） |
 | `README.md` | 本文件 |
 
 ---
